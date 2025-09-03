@@ -134,11 +134,10 @@ var _ = Describe("Writer", func() {
 		g.Add(1.0)
 		h.Observe(0.35)
 
-		w, err := writer.NewRemoteMetricsWriter(writer.RemoteMetricsWriterOptions{
-			TargetURL:      s.URL,
-			HTTPClient:     s.Client(),
-			OutputFormat:   writer.Protobuf,
-			OutputEncoding: writer.Snappy,
+		w, err := writer.NewRemoteMetricsWriter(s.URL, writer.RemoteMetricsWriterOptions{
+			HTTPClient:  s.Client(),
+			Format:      writer.Protobuf,
+			Compression: writer.Snappy,
 		})
 		Expect(err).ShouldNot(HaveOccurred())
 
@@ -160,11 +159,10 @@ var _ = Describe("Writer", func() {
 		g.Add(1.0)
 		h.Observe(0.35)
 
-		w, err := writer.NewRemoteMetricsWriter(writer.RemoteMetricsWriterOptions{
-			TargetURL:      s.URL,
-			HTTPClient:     s.Client(),
-			OutputFormat:   writer.JSON,
-			OutputEncoding: writer.Gzip,
+		w, err := writer.NewRemoteMetricsWriter(s.URL, writer.RemoteMetricsWriterOptions{
+			HTTPClient:  s.Client(),
+			Format:      writer.JSON,
+			Compression: writer.Gzip,
 		}, r)
 		Expect(err).ShouldNot(HaveOccurred())
 
