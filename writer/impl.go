@@ -19,6 +19,10 @@ type hasExemplar interface {
 	GetExemplar() *dto.Exemplar
 }
 
+// WriteMetrics takes all the metrics from the gatherers specified when the RemoteMetricsWriter was created,
+// converts them into a list of Timeseries and Metadata, then serializes and compresses it before sending to
+// the target endpoint. If sent successfully, it will return the number of timeseries actually sent to the
+// server. If an error occurs, no partial data will be sent, and the number returned will always be 0.
 func (w *writerImpl) WriteMetrics(ctx context.Context) (int, error) {
 	if ctx == nil {
 		return 0, ErrNilContext

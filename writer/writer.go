@@ -9,6 +9,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const DefaultRemoteWriteVersion = "0.1.0"
+
+// RemoteMetricsWriter knows how to marshal a set of metrics and send them to a remote
+// prometheus endpoint
 type RemoteMetricsWriter interface {
 	WriteMetrics(context.Context) (int, error)
 }
@@ -17,36 +21,50 @@ type writerImpl struct {
 	hc        *http.Client
 	targetURL string
 	gatherers prometheus.Gatherers
-	format    WriterFormat
-	encoding  WriterEncoding
+	format    Format
+	encoding  Compression
 	version   string
 }
 
-type WriterFormat int
+// Format represents the format to which metrics will be marshalled before sending to Prometheus
+type Format int
 
 const (
-	Protobuf WriterFormat = iota + 1
+	// Protobuf serializes to the protobuf description from the Prometheus github repository
+	Protobuf Format = iota + 1
+	// JSON serializes to standard JSON according to the Prometheus objects' JSON tags
 	JSON
 )
 
-type WriterEncoding int
+// Compression is the compression algorithm used on the marshalled data before sending
+type Compression int
 
 const (
-	None WriterEncoding = iota
+	// None tells the engine not to compress at all
+	None Compression = iota
+	// Snappy uses the snappy compression algorithm described at https://github.com/google/snappy
 	Snappy
+	// Gzip uses the standard Gzip compression algorithm with default compression level
 	Gzip
 )
 
+// RemoteMetricsWriterOptions are the optional settings for a RemoteMetricsWriter.
+//
+//	If HTTPClient is not set, http.DefaultClient is used
+//	If Format is not set, it defaults to Protobuf
+//	If Compression is not set, it defaults to None
+//	If RemoteWriteVersion is not set, it defaults to DefaultRemoteWriteVersion (0.1.0, currently). This should never change
 type RemoteMetricsWriterOptions struct {
-	TargetURL          string
 	HTTPClient         *http.Client
-	OutputFormat       WriterFormat
-	OutputEncoding     WriterEncoding
+	Format             Format
+	Compression        Compression
 	RemoteWriteVersion string
 }
 
-func NewRemoteMetricsWriter(options RemoteMetricsWriterOptions, gatherers ...prometheus.Gatherer) (RemoteMetricsWriter, error) {
-	if strings.TrimSpace(options.TargetURL) == "" {
+// NewRemoteMetricsWriter attempts to create and return a new RemoteMetricsWriter, and will do so unless targetURL is
+// the empty string (or only whitespace). If no gatherers are specified, prometheus.DefaultGatherer is used.
+func NewRemoteMetricsWriter(targetURL string, options RemoteMetricsWriterOptions, gatherers ...prometheus.Gatherer) (RemoteMetricsWriter, error) {
+	if strings.TrimSpace(targetURL) == "" {
 		return nil, errors.New("options.TargetURL must be set")
 	}
 
@@ -54,8 +72,8 @@ func NewRemoteMetricsWriter(options RemoteMetricsWriterOptions, gatherers ...pro
 		options.HTTPClient = http.DefaultClient
 	}
 
-	if options.OutputFormat == 0 {
-		options.OutputFormat = Protobuf
+	if options.Format == 0 {
+		options.Format = Protobuf
 	}
 
 	if gatherers == nil {
@@ -63,15 +81,15 @@ func NewRemoteMetricsWriter(options RemoteMetricsWriterOptions, gatherers ...pro
 	}
 
 	if strings.TrimSpace(options.RemoteWriteVersion) == "" {
-		options.RemoteWriteVersion = "0.1.0"
+		options.RemoteWriteVersion = DefaultRemoteWriteVersion
 	}
 
 	return &writerImpl{
 		hc:        options.HTTPClient,
-		targetURL: options.TargetURL,
+		targetURL: targetURL,
 		gatherers: gatherers,
-		format:    options.OutputFormat,
-		encoding:  options.OutputEncoding,
+		format:    options.Format,
+		encoding:  options.Compression,
 		version:   options.RemoteWriteVersion,
 	}, nil
 }

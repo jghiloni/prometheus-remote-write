@@ -11,7 +11,8 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 )
 
-func (f WriterFormat) String() string {
+// String returns the name of the Format
+func (f Format) String() string {
 	switch f {
 	case Protobuf:
 		return "protobuf"
@@ -22,7 +23,8 @@ func (f WriterFormat) String() string {
 	}
 }
 
-func (f WriterFormat) Marshal(wr prompb.WriteRequest) ([]byte, error) {
+// Marshal will attempt to convert the prompb.WriteRequest into a byte slice
+func (f Format) Marshal(wr prompb.WriteRequest) ([]byte, error) {
 	switch f {
 	case Protobuf:
 		return wr.Marshal()
@@ -33,7 +35,8 @@ func (f WriterFormat) Marshal(wr prompb.WriteRequest) ([]byte, error) {
 	}
 }
 
-func (f WriterFormat) UpdateRequest(req *http.Request) {
+// UpdateRequest adds the approprate Content-Type header to the given request
+func (f Format) UpdateRequest(req *http.Request) {
 	contentType := "application/octet-stream"
 	switch f {
 	case Protobuf:
@@ -44,7 +47,8 @@ func (f WriterFormat) UpdateRequest(req *http.Request) {
 	req.Header.Set("Content-Type", contentType)
 }
 
-func (e WriterEncoding) String() string {
+// String returns the name of the compression algorithm
+func (e Compression) String() string {
 	switch e {
 	case None:
 		return "none"
@@ -57,7 +61,9 @@ func (e WriterEncoding) String() string {
 	}
 }
 
-func (e WriterEncoding) Compress(data []byte) ([]byte, error) {
+// Compress attempts to compress the data with the given algorithm. If the Compression instance is valid, only gzip returns
+// an error
+func (e Compression) Compress(data []byte) ([]byte, error) {
 	switch e {
 	case None:
 		return data, nil
@@ -78,7 +84,8 @@ func (e WriterEncoding) Compress(data []byte) ([]byte, error) {
 	}
 }
 
-func (e WriterEncoding) UpdateRequest(req *http.Request) {
+// UpdateRequest adds the appropriate Content-Encoding header to the given request
+func (e Compression) UpdateRequest(req *http.Request) {
 	if e != None {
 		req.Header.Set("Content-Encoding", e.String())
 	}
