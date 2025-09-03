@@ -1,0 +1,31 @@
+name: Test
+on:
+  push:
+    paths-ignore:
+      - LICENSE
+      - README.md
+      - .gitignore
+
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    paths-ignore:
+      - LICENSE
+      - README.md
+      - .gitignore
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: ["stable", "oldstable"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+      - run: go install github.com/onsi/ginkgo/v2/ginkgo
+      - run: $(go env GOPATH)/bin/ginkgo -race -cover -r -p .
