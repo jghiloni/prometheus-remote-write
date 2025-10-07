@@ -126,6 +126,7 @@ func getTimeseries(family *dto.MetricFamily) []prompb.TimeSeries {
 	ts := make([]prompb.TimeSeries, len(family.GetMetric()))
 	for i, metric := range family.GetMetric() {
 		prompbLabels := convertLabels(metric.Label)
+		prompbLabels = append(prompbLabels, prompb.Label{Name: "__metric__", Value: family.GetName()})
 
 		var samplerMetric any
 		var histogram *dto.Histogram
